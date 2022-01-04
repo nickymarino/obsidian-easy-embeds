@@ -1,4 +1,4 @@
-import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, PluginSettingTab, Setting, MarkdownView } from 'obsidian';
+import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView } from 'obsidian';
 import TwitterEmbed from 'twitter';
 import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from 'settings'
 
@@ -59,7 +59,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 			const currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
 
 			tweetIframes.forEach((iframe) => {
-				const findTheme = /theme\=(dark|light)/
+				const findTheme = /theme=(dark|light)/
 				const replaceTheme = `theme=${currentTheme}`
 				iframe.src.replace(findTheme, replaceTheme)
 			})

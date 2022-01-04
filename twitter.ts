@@ -1,21 +1,16 @@
-import { App, MarkdownPostProcessorContext, Notice } from "obsidian";
+import { Notice } from "obsidian";
 
 import * as yaml from 'js-yaml';
 import { Align, Cards, Conversation, Settings, Theme, Width } from "settings";
-import { DefaultSerializer } from "v8";
 import { UITheme } from "main";
 
-
-interface TwitterAPIEmbedOptions {
-
-}
 
 interface TwitterAPI {
     _e?: (() => void)[]
     ready?: (f: () => void) => void
     widgets?: {
         load?: () => void,
-        createTweet?: (id: string, container: HTMLElement, options?: TwitterAPIEmbedOptions) => Promise<HTMLElement>
+        createTweet?: (id: string, container: HTMLElement, options?: Record<string, string>) => Promise<HTMLElement>
     };
 }
 
@@ -37,9 +32,12 @@ export default class TwitterEmbed {
 
         // https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/set-up-twitter-for-websites
         window.twttr = (function (d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0],
+            // eslint-disable-next-line prefer-const
+            let js, fjs = d.getElementsByTagName(s)[0],
+                // eslint-disable-next-line prefer-const
                 t = window.twttr || {};
             if (d.getElementById(id)) return t;
+            // eslint-disable-next-line prefer-const
             js = d.createElement(s);
             js.id = id;
             js.src = "https://platform.twitter.com/widgets.js";
@@ -63,7 +61,7 @@ export default class TwitterEmbed {
     }
 
     parseCodeBlock(filteredSource: string, defaults: Settings, uiTheme: UITheme): ParsedTweetCodeBlock {
-        let contents: any
+        let contents: unknown
         try {
             contents = yaml.load(filteredSource)
         } catch (err) {
