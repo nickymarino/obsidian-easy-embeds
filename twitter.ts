@@ -59,42 +59,35 @@ export default class TwitterEmbed {
         })
     }
 
-    embedFromCodeBlock(source: string, el: HTMLElement) {
-        //TODO: this should return a pass/fail, plus either the config or the error message
-        // for testing, then the caller (plugin) should handle creating the el
+    parseCodeBlock(filteredSource: string): ParsedConfig {
         let contents: any
         try {
-            contents = yaml.load(source)
+            contents = yaml.load(filteredSource)
         } catch (err) {
-            const errorBlock = el.createEl('pre')
-            errorBlock.textContent = `Twitter Embeds ERROR\n\ncould not parse options from code block due to the following error:\n\n${err.message}`
-            return
+            const error = `Could not parse options from code block due to the following error:\n\n${err.message}`
+            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
         }
 
         if ((contents == null) || (contents == undefined)) {
-            const errorBlock = el.createEl('pre')
-            errorBlock.textContent = 'Twitter Embeds ERROR\n\ncode block is blank'
-            return
+            const error = 'Code block is blank'
+            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
         }
 
         if (!contents.hasOwnProperty("url")) {
-            const errorBlock = el.createEl('pre')
-            errorBlock.textContent = 'Twitter Embeds ERROR\n\nmissing required key "url"'
-            return
+            const error = 'Missing required key "url"'
+            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
         }
 
         const url = contents["url"]
         if ((url == null) || (url == undefined) || (url.length < 1)) {
-            const errorBlock = el.createEl('pre')
-            errorBlock.textContent = `Twitter Embeds ERROR\n\nrequired key "url" cannot be blank`
-            return
+            const error = 'Required key "url" cannot be blank'
+            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
         }
 
         const status = this._parseStatusIDFromUrl(url)
         if ((status == undefined) || (status == null)) {
-            const errorBlock = el.createEl('pre')
-            errorBlock.textContent = `Twitter Embeds ERROR\n\ncould not parse status ID from url: "${url}"`
-            return
+            const error = `Could not parse status ID from url: "${url}"`
+            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
         }
 
         // Remove the url from the object so that it can be converted into config options
@@ -104,19 +97,11 @@ export default class TwitterEmbed {
             config = JSON.parse(JSON.stringify(contents))
 
         } catch (err) {
-            const errorBlock = el.createEl('pre')
-            errorBlock.textContent = `Twitter Embeds ERROR\n\ncould not load Twitter embed options: "${err.message}"`
-            return
+            const error = `Could not load Twitter embed options: "${err.message}"`
+            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
         }
 
-        const { ...options } = config
-        window.twttr.ready(() => {
-            window.twttr.widgets.createTweet(
-                status,
-                el,
-                options
-            )
-        })
+        return {parseSuccessful: true, status: status, config: config} as ParsedConfig
 
 
     }
@@ -131,6 +116,13 @@ export default class TwitterEmbed {
         return url.match(tweetRegex)?.groups?.status_id
     }
 
+}
+
+interface ParsedConfig {
+    parseSuccessful: boolean
+    status?: string
+    config?: Config
+    errorMessage?: string
 }
 
 

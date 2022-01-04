@@ -25,11 +25,25 @@ export default class TwitterEmbedPlugin extends Plugin {
 		});
 
 		this.registerMarkdownCodeBlockProcessor('tweet', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
-			this.twitter.embedFromCodeBlock(source, el)
+			const result = this.twitter.parseCodeBlock(source)
+
+			if (result.parseSuccessful) {
+				const { ...options } = result.config
+				window.twttr.ready(() => {
+					window.twttr.widgets.createTweet(
+						result.status,
+						el,
+						options
+					)
+				})
+			} else {
+				const header = "--- Twitter Embeds ERROR ---"
+				const fullMessage = `${header}\n\n${result.errorMessage}`
+				el.createEl('pre', {text: fullMessage})
+			}
 		})
 
 		this.addSettingTab(new TwitterEmbedSettingTab(this.app, this))
-
 	}
 
 	onunload() {
