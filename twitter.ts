@@ -26,14 +26,13 @@ export default class TwitterEmbed {
             js.id = id;
             js.src = "https://platform.twitter.com/widgets.js";
             js.onerror = alert
+            js.async = true
             fjs.parentNode.insertBefore(js, fjs);
 
             t._e = [];
             t.ready = function (f) {
                 t._e.push(f);
             };
-
-            console.log("hello, I'm loading the widget")
 
             return t;
         }(document, "script", "twitter-wjs"));
