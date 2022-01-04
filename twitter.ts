@@ -1,5 +1,8 @@
 import { App, MarkdownPostProcessorContext, Notice } from "obsidian";
 
+import * as yaml from 'js-yaml';
+
+
 interface TwitterAPIEmbedOptions {
 
 }
@@ -51,36 +54,69 @@ export default class TwitterEmbed {
     }
 
     render() {
-        window.twttr.widgets.load()
+        window.twttr.ready(() => {
+            window.twttr.widgets.load()
+        })
     }
 
     embedFromCodeBlock(source: string, el: HTMLElement) {
-        console.log('parsing')
-        const s = this._stripWhitespace(source)
-        const yaml = require('js-yaml')
-        const t = yaml.load(s)
+        //TODO: this should return a pass/fail, plus either the config or the error message
+        // for testing, then the caller (plugin) should handle creating the el
+        let contents: any
+        try {
+            contents = yaml.load(source)
+        } catch (err) {
+            const errorBlock = el.createEl('pre')
+            errorBlock.textContent = `Twitter Embeds ERROR\n\ncould not parse options from code block due to the following error:\n\n${err.message}`
+            return
+        }
 
-        const filteredSource = this._stripWhitespace(source)
-        const status = this._parseStatusIDFromUrl(filteredSource)
-        const con = new Config(status, t.conversation, t.cards, t.width, t.align, t.theme)
-        console.log(t)
+        if ((contents == null) || (contents == undefined)) {
+            const errorBlock = el.createEl('pre')
+            errorBlock.textContent = 'Twitter Embeds ERROR\n\ncode block is blank'
+            return
+        }
 
-        window.twttr.widgets.createTweet(
-            con.status,
-            el,
-            con.options()
-        )
+        if (!contents.hasOwnProperty("url")) {
+            const errorBlock = el.createEl('pre')
+            errorBlock.textContent = 'Twitter Embeds ERROR\n\nmissing required key "url"'
+            return
+        }
 
-        // console.log()
-        // const simpleConfig = this._parseSimpleUrlConfig(source)
-        // if (simpleConfig.didParse) {
-        //     window.twttr.widgets.createTweet(
-        //         simpleConfig.config.status,
-        //         el,
-        //         { align: 'center' }
-        //     )
-        //     return
-        // }
+        const url = contents["url"]
+        if ((url == null) || (url == undefined) || (url.length < 1)) {
+            const errorBlock = el.createEl('pre')
+            errorBlock.textContent = `Twitter Embeds ERROR\n\nrequired key "url" cannot be blank`
+            return
+        }
+
+        const status = this._parseStatusIDFromUrl(url)
+        if ((status == undefined) || (status == null)) {
+            const errorBlock = el.createEl('pre')
+            errorBlock.textContent = `Twitter Embeds ERROR\n\ncould not parse status ID from url: "${url}"`
+            return
+        }
+
+        // Remove the url from the object so that it can be converted into config options
+        delete contents["url"]
+        let config: Config
+        try {
+            config = JSON.parse(JSON.stringify(contents))
+
+        } catch (err) {
+            const errorBlock = el.createEl('pre')
+            errorBlock.textContent = `Twitter Embeds ERROR\n\ncould not load Twitter embed options: "${err.message}"`
+            return
+        }
+
+        const { ...options } = config
+        window.twttr.ready(() => {
+            window.twttr.widgets.createTweet(
+                status,
+                el,
+                options
+            )
+        })
 
 
     }
@@ -95,36 +131,11 @@ export default class TwitterEmbed {
         return url.match(tweetRegex)?.groups?.status_id
     }
 
-    // private _parseSimpleUrlConfig(source: string): ParseResult {
-
-    //     const filteredSource = this._stripWhitespace(source)
-    //     const status_id = this._parseStatusIDFromUrl
-
-
-    //     return {didParse: true, config: {status: status_id}} as ParseResult
-    // }
-
-    private _stripWhitespace(source: string): string {
-        const sourceLines = source.split('\n')
-        const linesWithValues = sourceLines.filter(line => line.length > 0)
-        const filteredSource = linesWithValues.join('\n')
-        return filteredSource
-    }
-
 }
 
-interface UserConfig {
-    url: string
-}
 
-interface ParseResult {
-    didParse: boolean
-    config?: Config
-    errorMessage?: string
-}
 
 class Config {
-    status: string
     conversation: "all" | "none"
     cards: "visible" | "hidden"
     width: BigInteger | string
@@ -132,28 +143,16 @@ class Config {
     theme: "dark" | "light"
 
     constructor(
-        status: string,
         conversation?: "all" | "none",
         cards?: "visible" | "hidden",
         width?: BigInteger | string,
         align?: "left" | "center" | "right",
         theme?: "dark" | "light"
     ) {
-        this.status = status
         this.conversation = conversation ?? "all"
         this.cards = cards ?? "visible"
         this.width = width ?? "auto"
         this.align = align ?? "center"
         this.theme = theme ?? "light"
-    }
-
-    options() {
-        return {
-            conversation: this.conversation,
-            cards: this.cards,
-            width: this.width,
-            align: this.align,
-            theme: this.theme,
-        }
     }
 }
