@@ -1,4 +1,6 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext, MarkdownPostProcessor } from 'obsidian';
+
+import * as twitter from 'twitter'
 
 // Remember to rename these classes and interfaces!
 
@@ -13,7 +15,49 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 export default class MyPlugin extends Plugin {
 	settings: MyPluginSettings;
 
+	twitterCodeBlockProcessor(
+		source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext
+	): void {
+		console.log('=======')
+		console.log(source);
+		console.log('=======')
+		console.log(el)
+		console.log('=======')
+		console.log(ctx)
+		el.textContent = 'your content: ' + source
+		twitter.loadWidgets()
+	}
+
+	postprocessor(el: HTMLElement, ctx: MarkdownPostProcessorContext): void {
+		console.log('hi 25')
+		twitter.loadWidgets();
+	}
+
+
 	async onload() {
+		console.log("loading! hi :)")
+		this.registerMarkdownCodeBlockProcessor('twitter', this.twitterCodeBlockProcessor);
+
+		twitter.init()
+		this.registerMarkdownPostProcessor(this.postprocessor);
+		// this.app.workspace.on('layout-change', () => {
+		// 	// TODO: if any of this.app.workspace.getLayout() is in preview mode (or live edit?)
+		// 	console.log("reloading!")
+		// 	twitter.loadWidgets()
+		// }
+		// )
+
+
+		// const scriptNode = this.app.workspace.containerEl.createEl('script');
+		// scriptNode.src = 'https://platform.twitter.com/widgets.js'
+		// scriptNode.async = true
+		// scriptNode.onload = () => {
+		// 	console.log("i'm loaded!")
+		// 	twttr.widgets.load()
+		// }
+
+		// this.app.workspace.containerEl.appendChild(scriptNode)
+
 		await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
