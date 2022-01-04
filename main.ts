@@ -24,6 +24,10 @@ export default class TwitterEmbedPlugin extends Plugin {
 			this.twitter.render()
 		});
 
+		this.registerMarkdownCodeBlockProcessor('twitter', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+			this.twitter.embed(source, el)
+		})
+
 		this.addSettingTab(new TwitterEmbedSettingTab(this.app, this))
 
 	}

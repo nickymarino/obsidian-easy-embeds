@@ -1,10 +1,22 @@
-import { App, Notice } from "obsidian";
+import { App, MarkdownPostProcessorContext, Notice } from "obsidian";
 
+interface TwitterAPIEmbedOptions {
+
+}
+
+interface TwitterAPI {
+    _e?: (() => void)[]
+    ready?: (f: () => void) => void
+    widgets?: {
+        load?: () => void,
+        createTweet?: (id: string, container: HTMLElement, options?: TwitterAPIEmbedOptions) => Promise<HTMLElement>
+    };
+}
 
 declare global {
-	interface Window {
-		twttr: any
-	}
+    interface Window {
+        twttr?: TwitterAPI
+    }
 }
 
 
@@ -42,4 +54,42 @@ export default class TwitterEmbed {
         window.twttr.widgets.load()
     }
 
+    embed(codeBlockSource: string, el: HTMLElement) {
+        const filteredSource = this._stripWhitespace(codeBlockSource)
+
+        // This regex captures the status ID of a tweet in the form:
+        // http(s)://(mobile.)twitter.com/<USERNAME>/status/<ID>(/whatever/and/or?with=parms)
+        //
+        // See the regex live https://regex101.com/r/nlo35z/5
+        // Modified from https://stackoverflow.com/a/49753932/2597913
+        const tweetRegex = /https?:\/\/(?:mobile\.)?twitter\.com\/(?:#!\/)?(\w+)\/status(es)?\/(?<status_id>\d+)/
+        const match = filteredSource.match(tweetRegex)
+
+
+        if (match == null) {
+            const message = 'Error: Could not parse tweet ID from URL below\n\n"' + filteredSource + '"'
+            let pre = el.createEl('pre')
+            pre.textContent = message
+            el.appendChild(pre)
+            return
+        }
+
+        const status_id = match.groups?.status_id
+
+        window.twttr.widgets.createTweet(
+            status_id,
+            el,
+            { align: 'center' }
+        )
+
+    }
+
+    private _stripWhitespace(source: string): string {
+        const sourceLines = source.split('\n')
+        const linesWithValues = sourceLines.filter(line => line.length > 0)
+        const filteredSource = linesWithValues.join('\n')
+        return filteredSource
+    }
+
 }
+
