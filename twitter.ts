@@ -1,6 +1,9 @@
 import { App, MarkdownPostProcessorContext, Notice } from "obsidian";
 
 import * as yaml from 'js-yaml';
+import { Align, Cards, Conversation, Settings, Theme, Width } from "settings";
+import { DefaultSerializer } from "v8";
+import { UITheme } from "main";
 
 
 interface TwitterAPIEmbedOptions {
@@ -59,51 +62,51 @@ export default class TwitterEmbed {
         })
     }
 
-    parseCodeBlock(filteredSource: string): ParsedConfig {
+    parseCodeBlock(filteredSource: string, defaults: Settings, uiTheme: UITheme): ParsedTweetCodeBlock {
         let contents: any
         try {
             contents = yaml.load(filteredSource)
         } catch (err) {
             const error = `Could not parse options from code block due to the following error:\n\n${err.message}`
-            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
+            return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
         if ((contents == null) || (contents == undefined)) {
             const error = 'Code block is blank'
-            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
+            return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
         if (!contents.hasOwnProperty("url")) {
             const error = 'Missing required key "url"'
-            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
+            return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
         const url = contents["url"]
         if ((url == null) || (url == undefined) || (url.length < 1)) {
             const error = 'Required key "url" cannot be blank'
-            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
+            return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
         const status = this._parseStatusIDFromUrl(url)
         if ((status == undefined) || (status == null)) {
             const error = `Could not parse status ID from url: "${url}"`
-            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
+            return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
-        // Remove the url from the object so that it can be converted into config options
+        // Remove the url from the object so that the object can be converted into options
         delete contents["url"]
-        let config: Config
+        let optionsFromCodeBlock: CodeBlockOptions
         try {
-            config = JSON.parse(JSON.stringify(contents))
+            optionsFromCodeBlock = JSON.parse(JSON.stringify(contents))
 
         } catch (err) {
             const error = `Could not load Twitter embed options: "${err.message}"`
-            return {parseSuccessful: false, errorMessage: error} as ParsedConfig
+            return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
-        return {parseSuccessful: true, status: status, config: config} as ParsedConfig
-
-
+        const finalOptions = this._overrideOptions(defaults, optionsFromCodeBlock, uiTheme)
+        console.log('theme: ' + finalOptions.theme)
+        return { parseSuccessful: true, status: status, options: finalOptions } as ParsedTweetCodeBlock
     }
 
     private _parseStatusIDFromUrl(url: string): string | undefined {
@@ -116,35 +119,52 @@ export default class TwitterEmbed {
         return url.match(tweetRegex)?.groups?.status_id
     }
 
+    private _overrideOptions(defaults: Settings, overrides: CodeBlockOptions, uiTheme: UITheme): CodeBlockOptions {
+        // Use the Ui theme if overrides theme is set to auto, or overrides theme is missing
+        // and defaults theme is auto
+        let finalTheme: Theme
+        if ((overrides.theme == null) || (overrides == undefined)) {
+            finalTheme = (defaults.theme == 'auto' ? uiTheme : defaults.theme)
+        } else {
+            finalTheme = (overrides.theme == 'auto' ? uiTheme : overrides.theme)
+        }
+
+        return new CodeBlockOptions(
+            overrides.conversation ?? defaults.conversation,
+            overrides.cards ?? defaults.cards,
+            overrides.width ?? defaults.width,
+            overrides.align ?? defaults.align,
+            overrides.theme ?? finalTheme
+        )
+    }
+
 }
 
-interface ParsedConfig {
+interface ParsedTweetCodeBlock {
     parseSuccessful: boolean
+    options?: CodeBlockOptions
     status?: string
-    config?: Config
     errorMessage?: string
 }
 
-
-
-class Config {
-    conversation: "all" | "none"
-    cards: "visible" | "hidden"
-    width: BigInteger | string
-    align: "left" | "center" | "right"
-    theme: "dark" | "light"
+class CodeBlockOptions {
+    conversation?: Conversation
+    cards?: Cards
+    width?: Width
+    align?: Align
+    theme?: Theme
 
     constructor(
-        conversation?: "all" | "none",
-        cards?: "visible" | "hidden",
-        width?: BigInteger | string,
-        align?: "left" | "center" | "right",
-        theme?: "dark" | "light"
+        conversation?: Conversation,
+        cards?: Cards,
+        width?: Width,
+        align?: Align,
+        theme?: Theme,
     ) {
-        this.conversation = conversation ?? "all"
-        this.cards = cards ?? "visible"
-        this.width = width ?? "auto"
-        this.align = align ?? "center"
-        this.theme = theme ?? "light"
+        this.conversation = conversation
+        this.cards = cards
+        this.width = width
+        this.align = align
+        this.theme = theme
     }
 }
