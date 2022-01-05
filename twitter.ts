@@ -85,7 +85,7 @@ export default class TwitterEmbed {
             return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
-        const status = this._parseStatusIDFromUrl(url)
+        const status = this.parseStatusIDFromUrl(url)
         if ((status == undefined) || (status == null)) {
             const error = `Could not parse status ID from url: "${url}"`
             return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
@@ -102,12 +102,12 @@ export default class TwitterEmbed {
             return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
-        const finalOptions = this._overrideOptions(defaults, optionsFromCodeBlock, uiTheme)
+        const finalOptions = this.overrideOptions(defaults, optionsFromCodeBlock, uiTheme)
         console.log('theme: ' + finalOptions.theme)
         return { parseSuccessful: true, status: status, options: finalOptions } as ParsedTweetCodeBlock
     }
 
-    private _parseStatusIDFromUrl(url: string): string | undefined {
+    parseStatusIDFromUrl(url: string): string | undefined {
         // This regex captures the status ID of a tweet in the form:
         // http(s)://(mobile.)twitter.com/<USERNAME>/status/<ID>(/whatever/and/or?with=parms)
         //
@@ -117,7 +117,7 @@ export default class TwitterEmbed {
         return url.match(tweetRegex)?.groups?.status_id
     }
 
-    private _overrideOptions(defaults: Settings, overrides: CodeBlockOptions, uiTheme: UITheme): CodeBlockOptions {
+    overrideOptions(defaults: Settings, overrides: CodeBlockOptions, uiTheme: UITheme): CodeBlockOptions {
         // Use the Ui theme if overrides theme is set to auto, or overrides theme is missing
         // and defaults theme is auto
         let finalTheme: Theme

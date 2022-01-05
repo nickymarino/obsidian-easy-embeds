@@ -1,9 +1,19 @@
 import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView } from 'obsidian';
 import TwitterEmbed from 'twitter';
 import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from 'settings'
+import { logging } from 'logging'
 
+
+logging.configure().registerConsoleLogger()
+const logger = logging.getLogger('obsidian-twitter-embeds.main')
 
 export type UITheme = 'light' | 'dark'
+
+
+const AUTO_EMBED_RAW_URLS = true
+const AUTO_EMBED_LINKS = true
+
+
 
 
 export default class TwitterEmbedPlugin extends Plugin {
@@ -18,11 +28,41 @@ export default class TwitterEmbedPlugin extends Plugin {
 	}
 
 	async onload() {
+		logger.info('Welcome to obsidian-twitter-embeds plugin! Loading')
+
 		await this.loadSettings()
 
 		this.twitter.load()
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
+
+			const addTweet = (status, options) => {
+				window.twttr.ready(() => {
+					window.twttr.widgets.createTweet(
+						status,
+						el,
+						options
+					)
+				})
+			}
+
+			const links = el.querySelectorAll('a.external-link') as NodeListOf<HTMLAnchorElement>
+			links.forEach(linkEl => {
+				if ((linkEl.innerText.length > 0) && (!AUTO_EMBED_LINKS)) {
+					return
+				}
+				if ((linkEl.innerText.length === 0) && (!AUTO_EMBED_RAW_URLS)) {
+					return
+				}
+
+				console.debug('found ahref: ' + linkEl)
+				const status = this.twitter.parseStatusIDFromUrl(linkEl.href)
+				const options = this.twitter.overrideOptions(this.settings, {}, uiTheme)
+				addTweet(status, options)
+			})
+
+			logger.info('rendering post process')
 			this.twitter.render()
 		});
 
@@ -32,7 +72,6 @@ export default class TwitterEmbedPlugin extends Plugin {
 
 			if (result.parseSuccessful) {
 				const { ...options } = result.options
-				console.log('align: ' + options.align)
 				window.twttr.ready(() => {
 					window.twttr.widgets.createTweet(
 						result.status,
