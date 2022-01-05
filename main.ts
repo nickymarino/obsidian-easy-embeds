@@ -1,10 +1,11 @@
-import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView } from 'obsidian';
-import TwitterEmbed from 'twitter';
+import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView, Notice } from 'obsidian';
+import TwitterEmbedder from 'twitter';
 import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from 'settings'
 import { logging } from 'logging'
+import DropboxEmbedder from 'dropbox';
 
 
-logging.configure().registerConsoleLogger()
+logging.configure({ minLevels: { '': 'debug' } }).registerConsoleLogger()
 const logger = logging.getLogger('obsidian-twitter-embeds.main')
 
 export type UITheme = 'light' | 'dark'
@@ -18,23 +19,50 @@ const AUTO_EMBED_LINKS = true
 
 export default class TwitterEmbedPlugin extends Plugin {
 
-	twitter: TwitterEmbed
+	twitter: TwitterEmbedder
+	dropbox: DropboxEmbedder
 	settings: Settings
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
 
-		this.twitter = new TwitterEmbed()
+		this.twitter = new TwitterEmbedder()
+		this.dropbox = new DropboxEmbedder()
 	}
 
 	async onload() {
-		logger.info('Welcome to obsidian-twitter-embeds plugin! Loading')
+		logger.info('Welcome to obsidian-twitter-embeds plugin!')
 
 		await this.loadSettings()
 
 		this.twitter.load()
+		this.dropbox.load(this.settings.dropbox.appKey)
+
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+			logger.info('called!')
+			const lin2 = el.querySelectorAll('a.external-link') as NodeListOf<HTMLAnchorElement>
+			lin2.forEach(linkEl => {
+				logger.debug('link ' + linkEl.href)
+				if (linkEl.href.contains('dropbox.com')) {
+					logger.debug('has dropbox')
+
+					console.log(window.Dropbox)
+					console.log(window.Dropbox.appKey)
+					const cont = el.createDiv()
+					cont.setAttribute('style', 'height: 300px')
+					setTimeout(() => {
+						logger.debug('doing the timeout')
+						window.Dropbox.embed({ link: linkEl.href }, cont)
+					}, 1000)
+
+				}
+			})
+		})
+
+		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+
+
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
 
 			const addTweet = (status, options) => {
@@ -56,7 +84,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 					return
 				}
 
-				console.debug('found ahref: ' + linkEl)
+				logger.debug('found ahref: ' + linkEl)
 				const status = this.twitter.parseStatusIDFromUrl(linkEl.href)
 				const options = this.twitter.overrideOptions(this.settings, {}, uiTheme)
 				addTweet(status, options)

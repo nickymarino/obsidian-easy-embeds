@@ -9,6 +9,9 @@ export type Width = BigInteger | 'auto'
 export type Align = 'left' | 'center' | 'right'
 
 
+export interface DropboxSettings {
+	appKey: string
+}
 
 export interface Settings {
 	theme: Theme
@@ -17,6 +20,7 @@ export interface Settings {
 	cards: Cards
 	width: Width
 	align: Align
+	dropbox: DropboxSettings
 }
 
 
@@ -27,7 +31,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	conversation: 'all',
 	cards: 'visible',
 	width: 'auto',
-	align: 'center'
+	align: 'center',
+	dropbox: {appKey: ''}
 }
 
 export class TwitterEmbedSettingTab extends PluginSettingTab {
@@ -97,6 +102,18 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings()
 				})
 			})
+
+		new Setting(containerEl)
+			.setName('Dropbox App Key')
+			.setDesc('Create an app key')
+			.addText(text => text
+				.setPlaceholder('app key')
+				.setValue(this.plugin.settings.dropbox.appKey)
+				.onChange(async (value) => {
+					this.plugin.settings.dropbox.appKey = value
+					await this.plugin.saveSettings()
+				})
+			)
 
 		containerEl.createEl('p', {text: 'more info https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/scripting-factory-functions and https://developer.twitter.com/en/docs/twitter-for-websites/webpage-properties'})
 

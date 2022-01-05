@@ -21,7 +21,7 @@ declare global {
 }
 
 
-export default class TwitterEmbed {
+export default class TwitterEmbedder {
 
     load() {
         const alert = () => {
