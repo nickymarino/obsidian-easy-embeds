@@ -41,21 +41,13 @@ export default class TwitterEmbedPlugin extends Plugin {
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			logger.info('called!')
-			const lin2 = el.querySelectorAll('a.external-link') as NodeListOf<HTMLAnchorElement>
-			lin2.forEach(linkEl => {
-				logger.debug('link ' + linkEl.href)
-				if (linkEl.href.contains('dropbox.com')) {
-					logger.debug('has dropbox')
-
-					console.log(window.Dropbox)
-					console.log(window.Dropbox.appKey)
-					const cont = el.createDiv()
-					cont.setAttribute('style', 'height: 300px')
-					setTimeout(() => {
-						logger.debug('doing the timeout')
-						window.Dropbox.embed({ link: linkEl.href }, cont)
-					}, 1000)
-
+			const lin2 = el.querySelectorAll('img') as NodeListOf<HTMLImageElement>
+			lin2.forEach(img => {
+				if (this.dropbox.canCreateEmbed(img)) {
+					const link = img.src
+					const embedContainer = img.parentNode.createDiv({title: img.alt})
+					this.dropbox.addEmbed(embedContainer, link)
+					img.parentNode.replaceChild(embedContainer, img)
 				}
 			})
 		})

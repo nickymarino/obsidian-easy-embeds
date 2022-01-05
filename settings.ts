@@ -48,10 +48,10 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Defaults for Embedded Tweets'})
+		containerEl.createEl('h2', {text: 'Twitter'})
 
 		new Setting(containerEl)
-			.setName('Default styling')
+			.setName('Default theme')
 			.setDesc('Overridden by the "theme" key in individual tweets')
 			.addDropdown(dropdown => {
 				dropdown.addOption('auto', 'auto')
@@ -103,6 +103,9 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 				})
 			})
 
+		containerEl.createEl('p', {text: 'more info https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/scripting-factory-functions and https://developer.twitter.com/en/docs/twitter-for-websites/webpage-properties'})
+
+		containerEl.createEl('h2', {text: 'Dropbox'})
 		new Setting(containerEl)
 			.setName('Dropbox App Key')
 			.setDesc('Create an app key')
@@ -115,7 +118,7 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 				})
 			)
 
-		containerEl.createEl('p', {text: 'more info https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/scripting-factory-functions and https://developer.twitter.com/en/docs/twitter-for-websites/webpage-properties'})
+
 
 	}
 }
