@@ -3,18 +3,13 @@ import TwitterEmbedder from 'twitter';
 import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from 'settings'
 import { logging } from 'logging'
 import DropboxEmbedder from 'dropbox';
+import { buildZebraStripsExtension } from 'zebra';
 
 
 logging.configure({ minLevels: { '': 'debug' } }).registerConsoleLogger()
-const logger = logging.getLogger(__filename)
+const logger = logging.getLogger('main')
 
 export type UITheme = 'light' | 'dark'
-
-
-const AUTO_EMBED_RAW_URLS = true
-const AUTO_EMBED_LINKS = true
-
-
 
 
 export default class TwitterEmbedPlugin extends Plugin {
@@ -37,6 +32,8 @@ export default class TwitterEmbedPlugin extends Plugin {
 
 		this.twitter.load()
 		this.dropbox.load(this.settings.dropbox.appKey)
+
+		this.registerEditorExtension(buildZebraStripsExtension())
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
