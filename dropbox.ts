@@ -3,12 +3,7 @@ import { Notice } from "obsidian"
 
 const logger = logging.getLogger('obsidian-twitter-embeds.' + __filename)
 
-interface Embedder {
-    canCreateEmbed(el: HTMLElement): boolean
-    createEmbed(el: HTMLElement): HTMLElement
-}
-
-export default class DropboxEmbedder implements Embedder {
+export default class DropboxEmbedder {
     private currentAppKey = 'none'
 
     load(appKey: string) {

@@ -6,7 +6,7 @@ import DropboxEmbedder from 'dropbox';
 
 
 logging.configure({ minLevels: { '': 'debug' } }).registerConsoleLogger()
-const logger = logging.getLogger('obsidian-twitter-embeds.main')
+const logger = logging.getLogger(__filename)
 
 export type UITheme = 'light' | 'dark'
 
@@ -38,8 +38,8 @@ export default class TwitterEmbedPlugin extends Plugin {
 		this.twitter.load()
 		this.dropbox.load(this.settings.dropbox.appKey)
 
-
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
 			logger.info('called!')
 			const lin2 = el.querySelectorAll('img') as NodeListOf<HTMLImageElement>
 			lin2.forEach(img => {
@@ -49,42 +49,21 @@ export default class TwitterEmbedPlugin extends Plugin {
 					this.dropbox.addEmbed(embedContainer, link)
 					img.parentNode.replaceChild(embedContainer, img)
 				}
+
+				if (this.twitter.canCreateEmbed(img)) {
+					const url = img.src
+					const options = this.twitter.overrideOptions(this.settings, {}, uiTheme)
+					const embedContainer = img.parentNode.createDiv()
+					// TODO: figure out whether to fix the img not getting replaced by twitter, or be ok
+					// with twitter and dropbox getting handled differently
+					// this.twitter.addEmbed(embedContainer, url, options)
+					//
+					// personally, I recommend moving the img to an ahref, then adding the tweet below the ahref
+					img.parentNode.removeChild(img)
+					this.twitter.addEmbed(embedContainer, url, options)
+				}
 			})
 		})
-
-		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
-
-
-			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
-
-			const addTweet = (status, options) => {
-				window.twttr.ready(() => {
-					window.twttr.widgets.createTweet(
-						status,
-						el,
-						options
-					)
-				})
-			}
-
-			const links = el.querySelectorAll('a.external-link') as NodeListOf<HTMLAnchorElement>
-			links.forEach(linkEl => {
-				if ((linkEl.innerText.length > 0) && (!AUTO_EMBED_LINKS)) {
-					return
-				}
-				if ((linkEl.innerText.length === 0) && (!AUTO_EMBED_RAW_URLS)) {
-					return
-				}
-
-				logger.debug('found ahref: ' + linkEl)
-				const status = this.twitter.parseStatusIDFromUrl(linkEl.href)
-				const options = this.twitter.overrideOptions(this.settings, {}, uiTheme)
-				addTweet(status, options)
-			})
-
-			logger.info('rendering post process')
-			this.twitter.render()
-		});
 
 		this.registerMarkdownCodeBlockProcessor('tweet', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'

@@ -20,7 +20,7 @@ export class LogManager extends EventEmitter {
     }
 
     private entryFormatter: LogEntryFormatter = ((entry: LogEntry) => {
-        return `[${entry.module}] ${entry.level.toUpperCase()}: ${entry.message}`
+        return `[Easy Embeds:${entry.module}] ${entry.level.toUpperCase()}: ${entry.message}`
     })
 
 

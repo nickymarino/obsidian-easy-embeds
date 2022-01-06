@@ -10,7 +10,7 @@ interface TwitterAPI {
     ready?: (f: () => void) => void
     widgets?: {
         load?: () => void,
-        createTweet?: (id: string, container: HTMLElement, options?: Record<string, string>) => Promise<HTMLElement>
+        createTweet?: (id: string, container: HTMLElement, options?: CodeBlockOptions) => Promise<HTMLElement>
     };
 }
 
@@ -22,6 +22,23 @@ declare global {
 
 
 export default class TwitterEmbedder {
+    canCreateEmbed(img: HTMLImageElement): boolean {
+        const status = this.parseStatusIDFromUrl(img.src)
+        return ((status != null) && (status !== undefined) && (status.length > 0))
+    }
+
+    addEmbed(div: HTMLDivElement, url: string, options: CodeBlockOptions): HTMLElement {
+        const status = this.parseStatusIDFromUrl(url)
+        window.twttr.ready(() => {
+            window.twttr.widgets.createTweet(
+                status,
+                div,
+                options
+            )
+        })
+
+        return div
+    }
 
     load() {
         const alert = () => {
