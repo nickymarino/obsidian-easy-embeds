@@ -17,7 +17,7 @@ interface TwitterAPI {
 
 declare global {
     interface Window {
-        twttr?: TwitterAPI
+        twttr: TwitterAPI
     }
 }
 

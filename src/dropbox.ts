@@ -1,8 +1,19 @@
 import { Notice } from "obsidian"
 import Embedder from "./embedder"
 
+declare global {
+    interface Window {
+        Dropbox: DropboxAPI
+    }
+}
 
-export default class DropboxEmbedder implements Embedder{
+interface DropboxAPI {
+    embed?: (options: Record<string, unknown>, el: HTMLElement) => void
+}
+
+
+export default class DropboxEmbedder implements Embedder {
+    private dropboxJSIdentifier = 'dropboxjs'
     private appKey: string
 
     constructor(appKey: string) {
@@ -10,15 +21,29 @@ export default class DropboxEmbedder implements Embedder{
         this.loadDropboxJS(true)
     }
 
+    canCreateEmbed(img: HTMLImageElement): boolean {
+        return img.src.contains('dropbox.com')
+    }
+
     canAddEmbed(url: string): boolean {
         return url.contains('dropbox.com')
     }
 
-    addEmbed(div: HTMLDivElement, link: string): void {
-        setTimeout(() => {
-            console.debug('doing the timeout')
-            window.Dropbox.embed({link: link}, div)
-        }, 5000)
+    addEmbed(parent: HTMLElement, url: string) {
+        this.ready(() => {
+            window.Dropbox.embed({ link: url }, parent)
+        })
+    }
+
+    ready(callback: () => void) {
+        (async () => {
+            while (!window.hasOwnProperty('Dropbox')
+                    || !window.Dropbox.hasOwnProperty('embed')
+                    || !window.Dropbox.embed) {
+                await new Promise(resolve => setTimeout(resolve, 500))
+            }
+            callback()
+        })()
     }
 
 
@@ -31,7 +56,7 @@ export default class DropboxEmbedder implements Embedder{
     }
 
     loadDropboxJS(force = false) {
-        const existingDropbox = document.getElementById("dropboxjs")
+        const existingDropbox = document.getElementById(this.dropboxJSIdentifier)
         if (!force && existingDropbox) {
             return
         }
@@ -42,7 +67,6 @@ export default class DropboxEmbedder implements Embedder{
             new Notice(message)
         }
 
-        console.debug('adding dbjs')
         window.Dropbox = (function (d, s, id, secret) {
             // eslint-disable-next-line prefer-const
             let script, fjs = d.getElementsByTagName(s)[0],
@@ -63,11 +87,6 @@ export default class DropboxEmbedder implements Embedder{
             fjs.parentNode.insertBefore(script, fjs);
 
             return t;
-        }(document, "script", "dropboxjs", this.appKey));
+        }(document, "script", this.dropboxJSIdentifier, this.appKey));
     }
-
-    canCreateEmbed(img: HTMLImageElement): boolean {
-        return img.src.contains('dropbox.com')
-    }
-
 }

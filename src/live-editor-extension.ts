@@ -24,9 +24,7 @@ class EmbedWidget extends WidgetType {
     toDOM(view: EditorView): HTMLElement {
         const wrap = document.createElement('span')
         wrap.className = 'embed-container'
-
         this.embedder.addEmbed(wrap, this.url)
-
         return wrap
     }
 
@@ -87,7 +85,6 @@ export function buildEmbedderExtension(embedders: Embedder[]) {
                                     const deco = Decoration.widget({
                                         widget: new EmbedWidget(text, embedder),
                                         side: 1,
-                                        block: true
                                     })
 
                                     // Add the widget to the end of the line
@@ -141,9 +138,6 @@ export function buildEmbedderExtension(embedders: Embedder[]) {
 
                 const siblingPropString = leftLeftSibling.type.prop(tokenClassNodeProp) ?? ''
                 const siblingProps = new Set(siblingPropString.split(' '))
-                for (const s of siblingProps) {
-                    console.log('item: ' + s)
-                }
                 if (siblingProps.has('image')) {
                     return
                 }
