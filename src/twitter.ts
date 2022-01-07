@@ -1,8 +1,8 @@
 import { Notice } from "obsidian";
 
 import * as yaml from 'js-yaml';
-import { Align, Cards, Conversation, Settings, Theme, Width } from "src/settings";
-import { UITheme } from "main";
+import { Align, Cards, Conversation, Settings, Theme, Width } from "./settings";
+import { UITheme } from "./main";
 import Embedder from "src/embedder";
 
 

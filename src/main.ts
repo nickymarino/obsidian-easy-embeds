@@ -1,8 +1,8 @@
-import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView, Notice } from 'obsidian';
+import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView } from 'obsidian';
 import TwitterEmbedder from './twitter';
 import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from './settings'
 import DropboxEmbedder from './dropbox';
-import { buildEmbedderExtension } from 'live-editor-extension';
+import { buildEmbedderExtension } from 'src/live-editor-extension';
 
 
 export type UITheme = 'light' | 'dark'
@@ -17,21 +17,19 @@ export default class TwitterEmbedPlugin extends Plugin {
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
 
-		this.twitter = new TwitterEmbedder()
-		this.dropbox = new DropboxEmbedder()
 	}
 
 	async onload() {
 		await this.loadSettings()
 
-		this.twitter.loadTwitterJS()
-		this.dropbox.load(this.settings.dropbox.appKey)
+		this.twitter = new TwitterEmbedder()
+		this.dropbox = new DropboxEmbedder(this.settings.dropbox.appKey)
 
-		this.registerEditorExtension(buildEmbedderExtension(this.twitter))
+		this.registerEditorExtension(buildEmbedderExtension([this.twitter, this.dropbox]))
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
-			console.info('called!')
+			// TODO: You should check for external urls here now, not images
 			const lin2 = el.querySelectorAll('img') as NodeListOf<HTMLImageElement>
 			lin2.forEach(img => {
 				if (this.dropbox.canCreateEmbed(img)) {
@@ -45,11 +43,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 					const url = img.src
 					const options = this.twitter.overrideOptions(this.settings, {}, uiTheme)
 					const embedContainer = img.parentNode.createDiv()
-					// TODO: figure out whether to fix the img not getting replaced by twitter, or be ok
-					// with twitter and dropbox getting handled differently
-					// this.twitter.addEmbed(embedContainer, url, options)
-					//
-					// personally, I recommend moving the img to an ahref, then adding the tweet below the ahref
+
 					img.parentNode.removeChild(img)
 					this.twitter.addEmbedToCodeBlock(embedContainer, url, options)
 				}

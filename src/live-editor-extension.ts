@@ -3,15 +3,15 @@ import { Range } from "@codemirror/rangeset";
 import { tokenClassNodeProp } from "@codemirror/stream-parser";
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
 import { NodeType, SyntaxNode } from "@lezer/common";
-import TwitterEmbedder from "src/twitter";
+import Embedder from "src/embedder";
 
 
 
 class EmbedWidget extends WidgetType {
     readonly url: string
-    readonly embedder: TwitterEmbedder
+    readonly embedder: Embedder
 
-    constructor(url: string, embedder: TwitterEmbedder) {
+    constructor(url: string, embedder: Embedder) {
         super()
         this.url = url
         this.embedder = embedder
@@ -23,10 +23,9 @@ class EmbedWidget extends WidgetType {
 
     toDOM(view: EditorView): HTMLElement {
         const wrap = document.createElement('span')
-        wrap.className = 'twitter-embed-container'
+        wrap.className = 'embed-container'
 
-        this.embedder.loadTwitterJS()
-        this.embedder.addEmbedToCodeBlock(wrap, this.url, {})
+        this.embedder.addEmbed(wrap, this.url)
 
         return wrap
     }
@@ -41,11 +40,11 @@ class EmbedWidget extends WidgetType {
 }
 
 
-export function buildEmbedderExtension(embedder: TwitterEmbedder) {
+export function buildEmbedderExtension(embedders: Embedder[]) {
     return ViewPlugin.fromClass(
         class {
             decorations: DecorationSet
-            embedder: TwitterEmbedder = embedder
+            embedders: Embedder[] = embedders
 
             constructor(view: EditorView) {
                 this.decorations = this.buildDecorations(view)
@@ -80,16 +79,23 @@ export function buildEmbedderExtension(embedder: TwitterEmbedder) {
                                     return
                                 }
 
-                                const deco = Decoration.widget({
-                                    widget: new EmbedWidget(text, this.embedder),
-                                    side: 1,
-                                    block: true
-                                })
+                                for (const embedder of this.embedders) {
+                                    if (!embedder.canAddEmbed(text)) {
+                                        continue
+                                    }
 
-                                // Add the widget to the end of the line
-                                const line = view.state.doc.lineAt(from)
-                                const lineEnd = line.to
-                                widgets.push(deco.range(lineEnd))
+                                    const deco = Decoration.widget({
+                                        widget: new EmbedWidget(text, embedder),
+                                        side: 1,
+                                        block: true
+                                    })
+
+                                    // Add the widget to the end of the line
+                                    const line = view.state.doc.lineAt(from)
+                                    const lineEnd = line.to
+                                    widgets.push(deco.range(lineEnd))
+                                }
+
                             }
                         })
                     } catch (error) {
