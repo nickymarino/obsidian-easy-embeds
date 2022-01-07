@@ -1,7 +1,7 @@
 import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView, Notice } from 'obsidian';
-import TwitterEmbedder from 'twitter';
-import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from 'settings'
-import DropboxEmbedder from 'dropbox';
+import TwitterEmbedder from './twitter';
+import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from './settings'
+import DropboxEmbedder from './dropbox';
 import { buildEmbedderExtension } from 'live-editor-extension';
 
 

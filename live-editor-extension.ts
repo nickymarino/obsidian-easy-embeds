@@ -3,7 +3,7 @@ import { Range } from "@codemirror/rangeset";
 import { tokenClassNodeProp } from "@codemirror/stream-parser";
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
 import { NodeType, SyntaxNode } from "@lezer/common";
-import TwitterEmbedder from "twitter";
+import TwitterEmbedder from "src/twitter";
 
 
 

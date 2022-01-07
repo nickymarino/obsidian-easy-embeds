@@ -15,7 +15,7 @@ esbuild.build({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ['main.ts'],
+	entryPoints: ['src/main.ts'],
 	bundle: true,
 	/* Make sure to add all @codemirror/* here to prevent Obsidian loading errors
 	 * See: https://github.dev/nothingislost/obsidian-cm6-attributes
@@ -55,5 +55,5 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: 'main.js',
+	outfile: 'dist/main.js',
 }).catch(() => process.exit(1));

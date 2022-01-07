@@ -1,8 +1,9 @@
 import { Notice } from "obsidian";
 
 import * as yaml from 'js-yaml';
-import { Align, Cards, Conversation, Settings, Theme, Width } from "settings";
+import { Align, Cards, Conversation, Settings, Theme, Width } from "src/settings";
 import { UITheme } from "main";
+import Embedder from "src/embedder";
 
 
 interface TwitterAPI {
@@ -20,10 +21,6 @@ declare global {
     }
 }
 
-interface Embedder {
-    canAddEmbed(url: string): boolean
-    addEmbed(parent: HTMLElement, url: string): void
-}
 
 
 export default class TwitterEmbedder implements Embedder {

@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-easy-embeds",
-	"version": "0.12.0",
+	"version": "1.0.0",
 	"description": "Quickly embed links to Tweets, YouTube videos, Dropbox files, and more",
 	"main": "main.js",
 	"scripts": {
