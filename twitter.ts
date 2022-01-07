@@ -20,27 +20,44 @@ declare global {
     }
 }
 
+interface Embedder {
+    canAddEmbed(url: string): boolean
+    addEmbed(parent: HTMLElement, url: string): void
+}
 
-export default class TwitterEmbedder {
-    canCreateEmbed(img: HTMLImageElement): boolean {
-        const status = this.parseStatusIDFromUrl(img.src)
+
+export default class TwitterEmbedder implements Embedder {
+    constructor() {
+        this.loadTwitterJS()
+    }
+
+    canAddEmbed(url: string): boolean {
+        const status = this.parseStatusIDFromUrl(url)
         return ((status != null) && (status !== undefined) && (status.length > 0))
     }
 
-    addEmbed(div: HTMLDivElement, url: string, options: CodeBlockOptions): HTMLElement {
+    addEmbed(parent: HTMLElement, url: string): void{
         const status = this.parseStatusIDFromUrl(url)
         window.twttr.ready(() => {
             window.twttr.widgets.createTweet(
                 status,
-                div,
+                parent,
+            )
+        })
+    }
+
+    addEmbedToCodeBlock(parent: HTMLElement, url: string, options: CodeBlockOptions): void{
+        const status = this.parseStatusIDFromUrl(url)
+        window.twttr.ready(() => {
+            window.twttr.widgets.createTweet(
+                status,
+                parent,
                 options
             )
         })
-
-        return div
     }
 
-    load() {
+    loadTwitterJS() {
         const alert = () => {
             const message = 'Twitter Embeds error: Failed to load Twitter JS'
             console.error(message)
@@ -71,7 +88,7 @@ export default class TwitterEmbedder {
         }(document, "script", "twitter-wjs"));
     }
 
-    render() {
+    refreshTwitterJS() {
         window.twttr.ready(() => {
             window.twttr.widgets.load()
         })

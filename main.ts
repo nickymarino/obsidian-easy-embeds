@@ -22,14 +22,12 @@ export default class TwitterEmbedPlugin extends Plugin {
 	}
 
 	async onload() {
-		console.info('Welcome to obsidian-twitter-embeds plugin!')
-
 		await this.loadSettings()
 
-		this.twitter.load()
+		this.twitter.loadTwitterJS()
 		this.dropbox.load(this.settings.dropbox.appKey)
 
-		this.registerEditorExtension(buildEmbedderExtension())
+		this.registerEditorExtension(buildEmbedderExtension(this.twitter))
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
@@ -43,7 +41,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 					img.parentNode.replaceChild(embedContainer, img)
 				}
 
-				if (this.twitter.canCreateEmbed(img)) {
+				if (this.twitter.canAddEmbed(img.src)) {
 					const url = img.src
 					const options = this.twitter.overrideOptions(this.settings, {}, uiTheme)
 					const embedContainer = img.parentNode.createDiv()
@@ -53,7 +51,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 					//
 					// personally, I recommend moving the img to an ahref, then adding the tweet below the ahref
 					img.parentNode.removeChild(img)
-					this.twitter.addEmbed(embedContainer, url, options)
+					this.twitter.addEmbedToCodeBlock(embedContainer, url, options)
 				}
 			})
 		})

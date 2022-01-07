@@ -3,42 +3,49 @@ import { Range } from "@codemirror/rangeset";
 import { tokenClassNodeProp } from "@codemirror/stream-parser";
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
 import { NodeType, SyntaxNode } from "@lezer/common";
-import { text } from "stream/consumers";
 import TwitterEmbedder from "twitter";
 
 
 
 class EmbedWidget extends WidgetType {
-    constructor(readonly url: string) { super() }
+    readonly url: string
+    readonly embedder: TwitterEmbedder
 
-    eq(other: EmbedWidget) { return other.url == this.url }
+    constructor(url: string, embedder: TwitterEmbedder) {
+        super()
+        this.url = url
+        this.embedder = embedder
+    }
+
+    eq(other: EmbedWidget) {
+        return other.url == this.url
+    }
 
     toDOM(view: EditorView): HTMLElement {
         const wrap = document.createElement('span')
-        wrap.setAttribute('aria-hidden', 'true')
-        wrap.className = 'cm-boolean-toggle'
-        const box = wrap.appendChild(document.createElement('p'))
-        box.textContent = this.url
-        box.setAttribute('style', 'color: red;')
+        wrap.className = 'twitter-embed-container'
+
+        this.embedder.loadTwitterJS()
+        this.embedder.addEmbedToCodeBlock(wrap, this.url, {})
+
         return wrap
     }
 
-    // TODO: create updateDOM() to return whether this widget should get updated?
-    // https://codemirror.net/6/docs/ref/#view.WidgetType.updateDOM
+    get estimatedHeight(): number {
+        return 400
+    }
 
     ignoreEvent(_event: Event): boolean {
-        // TODO: possibly check settings to see if this should be loaded?
         return false
     }
 }
 
 
-export function buildEmbedderExtension() {
+export function buildEmbedderExtension(embedder: TwitterEmbedder) {
     return ViewPlugin.fromClass(
         class {
             decorations: DecorationSet
-
-            // TODO: some sort of cache for known (exact) links
+            embedder: TwitterEmbedder = embedder
 
             constructor(view: EditorView) {
                 this.decorations = this.buildDecorations(view)
@@ -54,73 +61,88 @@ export function buildEmbedderExtension() {
 
             buildDecorations(view: EditorView) {
                 const widgets: Range<Decoration>[] = []
-                // const builder = new RangeSetBuilder<Decoration>()
                 for (const { from, to } of view.visibleRanges) {
-                    // TODO: Wrap this in a try/except, then log and throw (bleh)
-                    // so that you get a log for why everything crashed after the excention
-                    // is unloaded
+                    // Watch for decoration build issues *before* an error
+                    // forces the extension to unload
+                    try {
+                        const tree = syntaxTree(view.state)
+                        tree.iterate({
+                            from,
+                            to,
+                            enter: (nodeType: NodeType, from: number, to: number) => {
+                                // Using a TreeCursor here might be slightly more efficient,
+                                // but the real bottleneck is the embeds loading anyway
+                                const currentNode = tree.resolve(from, 1) as SyntaxNode
+                                const text = view.state.doc.sliceString(from, to).replace(' ', '')
 
-                    const tree = syntaxTree(view.state)
-                    tree.iterate({
-                        from,
-                        to,
-                        enter: (type: NodeType, from: number, to: number) => {
-                            const tokenProps = type.prop(tokenClassNodeProp)
-                            if (!tokenProps) {
-                                return
+                                // Back out if this token isn't something we can embed
+                                if (!this.tokenIsEmbeddableURL(currentNode, nodeType, text)) {
+                                    return
+                                }
+
+                                const deco = Decoration.widget({
+                                    widget: new EmbedWidget(text, this.embedder),
+                                    side: 1,
+                                    block: true
+                                })
+
+                                // Add the widget to the end of the line
+                                const line = view.state.doc.lineAt(from)
+                                const lineEnd = line.to
+                                widgets.push(deco.range(lineEnd))
                             }
+                        })
+                    } catch (error) {
+                        // Log and throw here so that you can read the exception
+                        // before codemirror unloads your plugin (throw so that
+                        // you don't crash the editor)
+                        console.error('Fatal live view embed error: ' + error)
+                    }
 
-                            // First, exit on any token that isn't an external URL inside a formatting link
-                            const props = new Set(tokenProps.split(' '))
-                            const tokenText = view.state.doc.sliceString(from, to).replace(' ', '')
-                            const isURLToken = props.has('url') && !props.has('formatting')
-                            const isExternalURL = tokenText.contains('://')
-
-                            if (!isURLToken || !isExternalURL) {
-                                return
-                            }
-
-                            // Then, exit if the URL text is invalid
-                            try {
-                                new URL(tokenText)
-                            } catch (err) {
-                                console.error('Invalid URL: ' + tokenText)
-                                return
-                            }
-
-
-                            // Check whether the sibling node two steps to the left is an image
-                            // and we shouldn't add decorations
-                            const currentNode = tree.resolve(from, 1) as SyntaxNode
-                            const leftLeftSibling = currentNode?.prevSibling?.prevSibling
-                            if (!leftLeftSibling) {
-                                return
-                            }
-
-                            const siblingPropString = leftLeftSibling.type.prop(tokenClassNodeProp)
-                            const siblingProps = new Set(siblingPropString.split(' ') ?? [])
-                            for (const s of siblingProps) {
-                                console.log('item: ' + s)
-                            }
-                            if (siblingProps.has('image')) {
-                                return
-                            }
-
-                            const deco = Decoration.widget({
-                                widget: new EmbedWidget(tokenText),
-                                side: 1,
-                                block: true
-                            })
-
-                            // Add the widget to the end of the line
-                            const line = view.state.doc.lineAt(from)
-                            const lineEnd = line.to
-                            widgets.push(deco.range(lineEnd))
-                        }
-                    })
                 }
                 return Decoration.set(widgets)
 
+            }
+
+            tokenIsEmbeddableURL(node: SyntaxNode, nodeType: NodeType, text: string): boolean {
+                const tokenProps = nodeType.prop(tokenClassNodeProp)
+                if (!tokenProps) {
+                    return false
+                }
+
+                // First, exit on any token that isn't an external URL inside a formatting link
+                const props = new Set(tokenProps.split(' '))
+                const isURLToken = props.has('url') && !props.has('formatting')
+                const isExternalURL = text.contains('://')
+                if (!isURLToken || !isExternalURL) {
+                    return false
+                }
+
+                // Then, exit if the URL text is invalid
+                try {
+                    new URL(text)
+                } catch (err) {
+                    console.error('Invalid URL: ' + text)
+                    return false
+                }
+
+                // Check whether the sibling node two steps to the left is an image
+                // and we shouldn't add decorations
+                const leftLeftSibling = node?.prevSibling?.prevSibling
+                if (!leftLeftSibling) {
+                    return false
+                }
+
+                const siblingPropString = leftLeftSibling.type.prop(tokenClassNodeProp) ?? ''
+                const siblingProps = new Set(siblingPropString.split(' '))
+                for (const s of siblingProps) {
+                    console.log('item: ' + s)
+                }
+                if (siblingProps.has('image')) {
+                    return
+                }
+
+                return true
             }
 
 
