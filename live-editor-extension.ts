@@ -1,22 +1,25 @@
 import { syntaxTree } from "@codemirror/language";
-import { Range, RangeSetBuilder } from "@codemirror/rangeset";
+import { Range } from "@codemirror/rangeset";
 import { tokenClassNodeProp } from "@codemirror/stream-parser";
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
-import { randomInt } from "crypto";
+import { NodeType, SyntaxNode } from "@lezer/common";
+import { text } from "stream/consumers";
+import TwitterEmbedder from "twitter";
 
 
-class CheckboxWidget extends WidgetType {
-    constructor(readonly checked: boolean) { super() }
 
-    eq(other: CheckboxWidget) { return other.checked == this.checked }
+class EmbedWidget extends WidgetType {
+    constructor(readonly url: string) { super() }
+
+    eq(other: EmbedWidget) { return other.url == this.url }
 
     toDOM(view: EditorView): HTMLElement {
         const wrap = document.createElement('span')
         wrap.setAttribute('aria-hidden', 'true')
         wrap.className = 'cm-boolean-toggle'
-        const box = wrap.appendChild(document.createElement('input'))
-        box.type = 'checkbox'
-        box.checked = this.checked
+        const box = wrap.appendChild(document.createElement('p'))
+        box.textContent = this.url
+        box.setAttribute('style', 'color: red;')
         return wrap
     }
 
@@ -30,97 +33,99 @@ class CheckboxWidget extends WidgetType {
 }
 
 
-class EmbedderViewPlugin {
-    decorations: DecorationSet
+export function buildEmbedderExtension() {
+    return ViewPlugin.fromClass(
+        class {
+            decorations: DecorationSet
 
-    // TODO: some sort of cache for known (exact) links
+            // TODO: some sort of cache for known (exact) links
 
-    constructor(view: EditorView) {
-        this.decorations = this.buildDecorations(view)
-    }
+            constructor(view: EditorView) {
+                this.decorations = this.buildDecorations(view)
+            }
 
-    update(update: ViewUpdate) {
-        if (update.docChanged || update.viewportChanged) {
-            this.decorations = this.buildDecorations(update.view)
-        }
-    }
-
-    destroy() { }
-
-    buildDecorations(view: EditorView) {
-        const widgets: Range<Decoration>[] = []
-        // const builder = new RangeSetBuilder<Decoration>()
-        for (const { from, to } of view.visibleRanges) {
-            // TODO: Wrap this in a try/except, then log and throw (bleh)
-            // so that you get a log for why everything crashed after the excention
-            // is unloaded
-
-            const tree = syntaxTree(view.state)
-            tree.iterate({
-                from,
-                to,
-                enter: (type, from, to) => {
-                    // `type` here is a NodeType
-                    const tokenProps = type.prop(tokenClassNodeProp)
-                    if (!tokenProps) {
-                        return
-                    }
-
-                    const props = new Set(tokenProps.split(' '))
-
-                    const isExternalLink = props.has('url')
-                    const linkText = view.state.doc.sliceString(from, to)
-                    if (!(isExternalLink && linkText.contains('://'))) {
-                        return
-                    }
-
-                    const line = view.state.doc.lineAt(from)
-                    console.log(`Link @ line ${line.number} (from=${from}, to=${to}): ${linkText}`)
-
-                    const deco = Decoration.widget({
-                        widget: new CheckboxWidget(randomInt(2) == 0 ? true : false),
-                        side: 1,
-                        block: true
-                    })
-
-                    // Add the widget to the end of the line
-                    const lineEnd = line.to
-                    widgets.push(deco.range(lineEnd))
-                }
-            })
-        }
-        return Decoration.set(widgets)
-
-        // return builder.finish()
-    }
-
-}
-
-export function buildEmbedderExtension(): ViewPlugin<EmbedderViewPlugin> {
-    return ViewPlugin.fromClass(EmbedderViewPlugin, {
-        decorations: v => v.decorations,
-        eventHandlers: {
-            mousedown: (e, view) => {
-                const target = e.target as HTMLElement
-                if (target.nodeName == "INPUT" &&
-                    target.parentElement?.classList.contains('cm-boolean-toggle')) {
-                    return toggleBoolean(view, view.posAtDOM(target))
+            update(update: ViewUpdate) {
+                if (update.docChanged || update.viewportChanged) {
+                    this.decorations = this.buildDecorations(update.view)
                 }
             }
-        }
+
+            destroy() { }
+
+            buildDecorations(view: EditorView) {
+                const widgets: Range<Decoration>[] = []
+                // const builder = new RangeSetBuilder<Decoration>()
+                for (const { from, to } of view.visibleRanges) {
+                    // TODO: Wrap this in a try/except, then log and throw (bleh)
+                    // so that you get a log for why everything crashed after the excention
+                    // is unloaded
+
+                    const tree = syntaxTree(view.state)
+                    tree.iterate({
+                        from,
+                        to,
+                        enter: (type: NodeType, from: number, to: number) => {
+                            const tokenProps = type.prop(tokenClassNodeProp)
+                            if (!tokenProps) {
+                                return
+                            }
+
+                            // First, exit on any token that isn't an external URL inside a formatting link
+                            const props = new Set(tokenProps.split(' '))
+                            const tokenText = view.state.doc.sliceString(from, to).replace(' ', '')
+                            const isURLToken = props.has('url') && !props.has('formatting')
+                            const isExternalURL = tokenText.contains('://')
+
+                            if (!isURLToken || !isExternalURL) {
+                                return
+                            }
+
+                            // Then, exit if the URL text is invalid
+                            try {
+                                new URL(tokenText)
+                            } catch (err) {
+                                console.error('Invalid URL: ' + tokenText)
+                                return
+                            }
+
+
+                            // Check whether the sibling node two steps to the left is an image
+                            // and we shouldn't add decorations
+                            const currentNode = tree.resolve(from, 1) as SyntaxNode
+                            const leftLeftSibling = currentNode?.prevSibling?.prevSibling
+                            if (!leftLeftSibling) {
+                                return
+                            }
+
+                            const siblingPropString = leftLeftSibling.type.prop(tokenClassNodeProp)
+                            const siblingProps = new Set(siblingPropString.split(' ') ?? [])
+                            for (const s of siblingProps) {
+                                console.log('item: ' + s)
+                            }
+                            if (siblingProps.has('image')) {
+                                return
+                            }
+
+                            const deco = Decoration.widget({
+                                widget: new EmbedWidget(tokenText),
+                                side: 1,
+                                block: true
+                            })
+
+                            // Add the widget to the end of the line
+                            const line = view.state.doc.lineAt(from)
+                            const lineEnd = line.to
+                            widgets.push(deco.range(lineEnd))
+                        }
+                    })
+                }
+                return Decoration.set(widgets)
+
+            }
+
+
+        }, {
+        decorations: v => v.decorations,
     })
 }
 
-function toggleBoolean(view: EditorView, pos: number): boolean {
-    const before = view.state.doc.sliceString(Math.max(0, pos - 5), pos)
-    let change
-    if (before == "false") {
-        change = { from: pos - 5, to: pos, insert: "true" }
-    } else if (before.endsWith("true")) {
-        change = { from: pos - 4, to: pos, insert: "false" }
-    } else {
-        return false
-    }
-    view.dispatch({ changes: change })
-    return true
-}

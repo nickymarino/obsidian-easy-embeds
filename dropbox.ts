@@ -1,7 +1,5 @@
-import { logging } from "logging"
 import { Notice } from "obsidian"
 
-const logger = logging.getLogger('obsidian-twitter-embeds.' + __filename)
 
 export default class DropboxEmbedder {
     private currentAppKey = 'none'
@@ -11,11 +9,11 @@ export default class DropboxEmbedder {
         if (!document.getElementById("dropboxjs")) {
             const alert = () => {
                 const message = 'Twitter Embeds error: Failed to load Twitter JS'
-                logger.error(message)
+                console.error(message)
                 new Notice(message)
             }
 
-            logger.debug('adding dbjs')
+            console.debug('adding dbjs')
             window.Dropbox = (function (d, s, id, secret) {
                 // eslint-disable-next-line prefer-const
                 let script, fjs = d.getElementsByTagName(s)[0],
@@ -43,7 +41,7 @@ export default class DropboxEmbedder {
 
     addEmbed(div: HTMLDivElement, link: string): void {
         setTimeout(() => {
-            logger.debug('doing the timeout')
+            console.debug('doing the timeout')
             window.Dropbox.embed({ link: link}, div)
         }, 1000)
     }

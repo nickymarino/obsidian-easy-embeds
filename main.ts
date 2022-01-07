@@ -1,13 +1,9 @@
 import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView, Notice } from 'obsidian';
 import TwitterEmbedder from 'twitter';
 import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from 'settings'
-import { logging } from 'logging'
 import DropboxEmbedder from 'dropbox';
 import { buildEmbedderExtension } from 'live-editor-extension';
 
-
-logging.configure({ minLevels: { '': 'debug' } }).registerConsoleLogger()
-const logger = logging.getLogger('main')
 
 export type UITheme = 'light' | 'dark'
 
@@ -26,7 +22,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 	}
 
 	async onload() {
-		logger.info('Welcome to obsidian-twitter-embeds plugin!')
+		console.info('Welcome to obsidian-twitter-embeds plugin!')
 
 		await this.loadSettings()
 
@@ -37,7 +33,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
-			logger.info('called!')
+			console.info('called!')
 			const lin2 = el.querySelectorAll('img') as NodeListOf<HTMLImageElement>
 			lin2.forEach(img => {
 				if (this.dropbox.canCreateEmbed(img)) {
