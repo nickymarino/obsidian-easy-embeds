@@ -1,10 +1,11 @@
 import { App, Plugin, MarkdownPostProcessorContext, PluginManifest, MarkdownView } from 'obsidian';
-import TwitterEmbedder from './twitter';
+import TwitterEmbedder from './embeds/twitter';
 import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from './settings'
-import DropboxEmbedder from './dropbox';
+import DropboxEmbedder from './embeds/dropbox';
 import { buildEmbedderExtension } from 'src/live-editor-extension';
-import AppleMusicEmbedder from './apple-music';
-import SpotifyEmbedder from './spotify';
+import AppleMusicEmbedder from './embeds/apple-music';
+import SpotifyEmbedder from './embeds/spotify';
+import YoutubeEmbedder from './embeds/youtube';
 
 
 export type UITheme = 'light' | 'dark'
@@ -16,6 +17,8 @@ export default class TwitterEmbedPlugin extends Plugin {
 	dropbox: DropboxEmbedder
 	apple: AppleMusicEmbedder
 	spotify: SpotifyEmbedder
+	youtube: YoutubeEmbedder
+
 	settings: Settings
 
 	constructor(app: App, manifest: PluginManifest) {
@@ -30,13 +33,14 @@ export default class TwitterEmbedPlugin extends Plugin {
 		this.dropbox = new DropboxEmbedder(this.settings.dropbox.appKey)
 		this.apple = new AppleMusicEmbedder()
 		this.spotify = new SpotifyEmbedder()
+		this.youtube = new YoutubeEmbedder()
 
 		const liveEditorEmbedders = [
 			this.twitter,
 			this.dropbox,
 			this.apple,
-			this.spotify
-
+			this.spotify,
+			this.youtube
 		]
 		this.registerEditorExtension(buildEmbedderExtension(liveEditorEmbedders))
 
