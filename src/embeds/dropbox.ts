@@ -21,19 +21,31 @@ export default class DropboxEmbedder implements Embedder {
         this.loadDropboxJS(true)
     }
 
-    canCreateEmbed(img: HTMLImageElement): boolean {
-        return img.src.contains('dropbox.com')
-    }
-
     canAddEmbed(url: string): boolean {
         return url.contains('dropbox.com')
     }
 
     addEmbed(parent: HTMLElement, url: string) {
-        parent.setAttribute('style', 'height: 450px; margin-top: 10px;')
-        this.ready(() => {
-            window.Dropbox.embed({ link: url }, parent)
-        })
+        // Add a basic image if the Dropbox URL is "easy", because that loads
+        // much faster than Dropbox's iframe
+        //
+        // Regex: https://regex101.com/r/MB2WRa/1
+        const isImageRegex = new RegExp(/https?:\/\/(www\.)?dropbox.com\/(?<slug>s\/[\w\d]+\/\S+\.(png|jpeg|gif|jpg))(\?dl=0)?/, 'i')
+        const imageSlug = url.trim().match(isImageRegex)?.groups?.slug
+
+        if (imageSlug) {
+            const embedUrl = `https://www.dropbox.com/${imageSlug}?raw=1`
+
+            const img = parent.createEl('img') as HTMLImageElement
+            img.alt = 'Dropbox embedded image'
+            img.src = embedUrl
+        } else {
+            // Otherwise, use the Dropbox JS
+            parent.setAttribute('style', 'height: 450px; margin-top: 10px;')
+            this.ready(() => {
+                window.Dropbox.embed({ link: url }, parent)
+            })
+        }
     }
 
     ready(callback: () => void) {
@@ -46,7 +58,6 @@ export default class DropboxEmbedder implements Embedder {
             callback()
         })()
     }
-
 
     setAppKey(newKey: string) {
         if (newKey == this.appKey) {

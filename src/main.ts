@@ -48,7 +48,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
 			const lin2 = el.querySelectorAll('img') as NodeListOf<HTMLImageElement>
 			lin2.forEach(img => {
-				if (this.dropbox.canCreateEmbed(img)) {
+				if (this.dropbox.canAddEmbed(img.src)) {
 					const link = img.src
 					const embedContainer = img.parentNode.createDiv({title: img.alt})
 					this.dropbox.addEmbed(embedContainer, link)
