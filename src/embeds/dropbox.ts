@@ -37,6 +37,7 @@ export default class DropboxEmbedder implements Embedder {
             const embedUrl = `https://www.dropbox.com/${imageSlug}?raw=1`
 
             const img = parent.createEl('img') as HTMLImageElement
+            img.setAttribute('style', 'margin-top: 10px;')
             img.alt = 'Dropbox embedded image'
             img.src = embedUrl
         } else {
