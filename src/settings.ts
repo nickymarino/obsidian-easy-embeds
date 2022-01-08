@@ -45,12 +45,18 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const {containerEl} = this
-
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Twitter'})
+		this.addTwitter()
+		this.addDropbox()
+	}
 
-		new Setting(containerEl)
+	private addTwitter() {
+		const {containerEl: parent} = this
+
+		parent.createEl('h2', {text: 'Twitter'})
+
+		new Setting(parent)
 			.setName('Default theme')
 			.setDesc('Overridden by the "theme" key in individual tweets')
 			.addDropdown(dropdown => {
@@ -64,7 +70,7 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 				})
 			})
 
-		new Setting(containerEl)
+		new Setting(parent)
 			.setName('Hide parent tweet')
 			.setDesc('Overridden by the "conversation" key in individual tweets')
 			.addDropdown(dropdown => {
@@ -77,7 +83,7 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 				})
 			})
 
-		new Setting(containerEl)
+		new Setting(parent)
 			.setName('Hide photos, videos, and link previews')
 			.setDesc('Overridden by the "cards" key in individual tweets')
 			.addDropdown(dropdown => {
@@ -90,7 +96,7 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 				})
 			})
 
-		new Setting(containerEl)
+		new Setting(parent)
 			.setName('Hide Content Security Policy warnings')
 			.setDesc('If enabled, tweets that have Content Security Policy warnings are not embedded')
 			.addDropdown(dropdown => {
@@ -103,10 +109,21 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 				})
 			})
 
-		containerEl.createEl('p', {text: 'more info https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/scripting-factory-functions and https://developer.twitter.com/en/docs/twitter-for-websites/webpage-properties'})
+		const twitterInfo = parent.createEl('p')
+		twitterInfo.setAttribute('class', 'setting-item-description')
+		twitterInfo.appendText('See the ')
+		const link = twitterInfo.createEl('a')
+		link.href = 'https://developer.twitter.com/en/docs/twitter-for-websites/webpage-properties'
+		link.text = 'Twitter embed documentation'
+		twitterInfo.appendText(' for more information on these settings.')
+	}
 
-		containerEl.createEl('h2', {text: 'Dropbox'})
-		new Setting(containerEl)
+	private addDropbox() {
+		const {containerEl: parent} = this
+
+		parent.createEl('h2', {text: 'Dropbox'})
+
+		new Setting(parent)
 			.setName('Dropbox App Key')
 			.setDesc('Create an app key')
 			.addText(text => text
@@ -117,8 +134,5 @@ export class TwitterEmbedSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings()
 				})
 			)
-
-
-
 	}
 }
