@@ -4,6 +4,7 @@ import { Settings, TwitterEmbedSettingTab, DEFAULT_SETTINGS } from './settings'
 import DropboxEmbedder from './dropbox';
 import { buildEmbedderExtension } from 'src/live-editor-extension';
 import AppleMusicEmbedder from './apple-music';
+import SpotifyEmbedder from './spotify';
 
 
 export type UITheme = 'light' | 'dark'
@@ -14,6 +15,7 @@ export default class TwitterEmbedPlugin extends Plugin {
 	twitter: TwitterEmbedder
 	dropbox: DropboxEmbedder
 	apple: AppleMusicEmbedder
+	spotify: SpotifyEmbedder
 	settings: Settings
 
 	constructor(app: App, manifest: PluginManifest) {
@@ -27,11 +29,13 @@ export default class TwitterEmbedPlugin extends Plugin {
 		this.twitter = new TwitterEmbedder()
 		this.dropbox = new DropboxEmbedder(this.settings.dropbox.appKey)
 		this.apple = new AppleMusicEmbedder()
+		this.spotify = new SpotifyEmbedder()
 
 		const liveEditorEmbedders = [
 			this.twitter,
 			this.dropbox,
-			this.apple
+			this.apple,
+			this.spotify
 
 		]
 		this.registerEditorExtension(buildEmbedderExtension(liveEditorEmbedders))

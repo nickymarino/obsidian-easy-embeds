@@ -145,7 +145,7 @@ export default class TwitterEmbedder implements Embedder {
         // See the regex live https://regex101.com/r/nlo35z/5
         // Modified from https://stackoverflow.com/a/49753932/2597913
         const tweetRegex = /https?:\/\/(?:mobile\.)?twitter\.com\/(?:#!\/)?(\w+)\/status(es)?\/(?<status_id>\d+)/
-        return url.match(tweetRegex)?.groups?.status_id
+        return url.trim().match(tweetRegex)?.groups?.status_id
     }
 
     overrideOptions(defaults: Settings, overrides: CodeBlockOptions, uiTheme: UITheme): CodeBlockOptions {
