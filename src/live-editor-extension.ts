@@ -22,7 +22,7 @@ class EmbedWidget extends WidgetType {
     }
 
     toDOM(view: EditorView): HTMLElement {
-        const wrap = document.createElement('span')
+        const wrap = document.createElement('div')
         wrap.className = 'embed-container'
         this.embedder.addEmbed(wrap, this.url)
         return wrap

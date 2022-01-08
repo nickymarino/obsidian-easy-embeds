@@ -25,11 +25,14 @@ export default class TwitterEmbedPlugin extends Plugin {
 		this.twitter = new TwitterEmbedder()
 		this.dropbox = new DropboxEmbedder(this.settings.dropbox.appKey)
 
-		this.registerEditorExtension(buildEmbedderExtension([this.twitter, this.dropbox]))
+		const liveEditorEmbedders = [
+			this.twitter,
+			this.dropbox
+		]
+		this.registerEditorExtension(buildEmbedderExtension(liveEditorEmbedders))
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
-			// TODO: You should check for external urls here now, not images
 			const lin2 = el.querySelectorAll('img') as NodeListOf<HTMLImageElement>
 			lin2.forEach(img => {
 				if (this.dropbox.canCreateEmbed(img)) {

@@ -30,6 +30,7 @@ export default class DropboxEmbedder implements Embedder {
     }
 
     addEmbed(parent: HTMLElement, url: string) {
+        parent.setAttribute('style', 'height: 450px; margin-top: 10px;')
         this.ready(() => {
             window.Dropbox.embed({ link: url }, parent)
         })
@@ -62,7 +63,7 @@ export default class DropboxEmbedder implements Embedder {
         }
 
         const alert = () => {
-            const message = 'Twitter Embeds error: Failed to load Twitter JS'
+            const message = 'Easy Embeds error: Failed to load Dropbox JS'
             console.error(message)
             new Notice(message)
         }
