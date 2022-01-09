@@ -46,22 +46,20 @@ export default class TwitterEmbedPlugin extends Plugin {
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
-			const lin2 = el.querySelectorAll('img') as NodeListOf<HTMLImageElement>
-			lin2.forEach(img => {
-				if (this.dropbox.canAddEmbed(img.src)) {
-					const link = img.src
-					const embedContainer = img.parentNode.createDiv({title: img.alt})
+
+			el.querySelectorAll('a.external-link').forEach((anchor: HTMLAnchorElement) => {
+				const link = anchor.href
+
+				if (this.dropbox.canAddEmbed(link)) {
+					const embedContainer = el.createDiv()
+					embedContainer.setAttribute('class', 'easy-embed easy-embed-dropbox')
 					this.dropbox.addEmbed(embedContainer, link)
-					img.parentNode.replaceChild(embedContainer, img)
-				}
 
-				if (this.twitter.canAddEmbed(img.src)) {
-					const url = img.src
+				} else if (this.twitter.canAddEmbed(link)) {
+					const embedContainer = el.createDiv()
+					embedContainer.setAttribute('class', 'embed-container easy-embed-twitter')
 					const options = this.twitter.overrideOptions(this.settings, {}, uiTheme)
-					const embedContainer = img.parentNode.createDiv()
-
-					img.parentNode.removeChild(img)
-					this.twitter.addEmbedToCodeBlock(embedContainer, url, options)
+					this.twitter.addEmbedToCodeBlock(embedContainer, link, options)
 				}
 			})
 		})
@@ -87,22 +85,6 @@ export default class TwitterEmbedPlugin extends Plugin {
 		})
 
 		this.addSettingTab(new TwitterEmbedSettingTab(this.app, this))
-
-		this.registerEvent(this.app.workspace.on('css-change', () => {
-			if (!(this.settings.theme === 'auto')) {
-				return
-			}
-
-			const tweetIframes = document.querySelectorAll(".twitter-tweet.twitter-tweet-rendered iframe") as NodeListOf<HTMLIFrameElement>
-
-			const currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
-
-			tweetIframes.forEach((iframe) => {
-				const findTheme = /theme=(dark|light)/
-				const replaceTheme = `theme=${currentTheme}`
-				iframe.src.replace(findTheme, replaceTheme)
-			})
-		}))
 	}
 
 	onunload() {
