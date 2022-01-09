@@ -44,7 +44,34 @@ export default class TwitterEmbedPlugin extends Plugin {
 		]
 		this.registerEditorExtension(buildEmbedderExtension(liveEditorEmbedders))
 
+
+		const refreshTwitterIfActiveBlockquotes = () => {
+			console.log('Leaf or layout changed')
+			const state = this.getActiveViewState()
+			if ((state == 'preview') || (state == 'live')) {
+				console.log('Current view is preview or live')
+				this.app.workspace.onLayoutReady(() => {
+					if (this.app.workspace.containerEl.querySelector('blockquote.twitter-tweet')) {
+						console.log('Twitter blockquote(s) found, refreshing...')
+						this.twitter.refreshTwitterJS()
+					} else {
+						console.log('No blockquotes found')
+					}
+				})
+			}
+		}
+
+		this.registerEvent(this.app.workspace.on('active-leaf-change', refreshTwitterIfActiveBlockquotes))
+
+		this.registerEvent(this.app.workspace.on('layout-change', refreshTwitterIfActiveBlockquotes))
+
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+			if (document.querySelector('.blockquote.twitter-tweet')) {
+				console.log('found tweet')
+			} else {
+				console.log('no tweets found')
+			}
+
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
 
 			el.querySelectorAll('a.external-link').forEach((anchor: HTMLAnchorElement) => {
@@ -62,6 +89,8 @@ export default class TwitterEmbedPlugin extends Plugin {
 					this.twitter.addEmbedToCodeBlock(embedContainer, link, options)
 				}
 			})
+
+
 		})
 
 		this.registerMarkdownCodeBlockProcessor('tweet', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
@@ -106,6 +135,24 @@ export default class TwitterEmbedPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings)
 		this.app.workspace.getActiveViewOfType(MarkdownView).previewMode?.rerender(true)
+	}
+
+	getActiveViewState(): 'source' | 'live' | 'preview' | 'unknown' {
+		const viewState = this.app.workspace.activeLeaf.getViewState()
+
+		if (viewState.state.mode == 'preview') {
+			return 'preview'
+		}
+
+		if ((viewState.state.mode == 'source') && (viewState.state.source)) {
+			return 'source'
+		}
+
+		if ((viewState.state.mode == 'source') && (!viewState.state.source)) {
+			return 'live'
+		}
+
+		return 'unknown'
 	}
 
 
