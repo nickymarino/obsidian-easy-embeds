@@ -55,7 +55,7 @@ export default class YoutubeEmbedder implements Embedder {
         // https://regex101.com/r/lI8ex8/1
         //
         // Example: https://www.youtube.com/playlist?list=PL3NaIVgSlAVLHty1-NuvPa9V0b0UwbzBd
-        const playlistRegex = /https?:\/\/(www\.)?youtube\.com\/playlist\?list\=(?<slug>\S+)/
+        const playlistRegex = /https?:\/\/(www\.)?youtube\.com\/playlist\?list=(?<slug>\S+)/
         const playlistSlug = trimmedURL.match(playlistRegex)?.groups?.slug
         if (playlistSlug) {
             return `https://www.youtube.com/embed/videoseries?list=${playlistSlug}`

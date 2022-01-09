@@ -65,9 +65,9 @@ export default class TwitterEmbedder implements Embedder {
     }
 
     parseCodeBlock(filteredSource: string, defaults: Settings, uiTheme: UITheme): ParsedTweetCodeBlock {
-        let contents: unknown
+        let contents: Record<string, unknown>
         try {
-            contents = yaml.load(filteredSource)
+            contents = yaml.load(filteredSource) as Record<string, unknown>
         } catch (err) {
             const error = `Could not parse options from code block due to the following error:\n\n${err.message}`
             return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
@@ -83,7 +83,7 @@ export default class TwitterEmbedder implements Embedder {
             return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
         }
 
-        const url = contents["url"]
+        const url = contents["url"] as string
         if ((url == null) || (url == undefined) || (url.length < 1)) {
             const error = 'Required key "url" cannot be blank'
             return { parseSuccessful: false, errorMessage: error } as ParsedTweetCodeBlock
@@ -155,7 +155,7 @@ export default class TwitterEmbedder implements Embedder {
                 t = window.twttr || {};
             if (d.getElementById(id)) return t;
             // eslint-disable-next-line prefer-const
-            js = d.createElement(s);
+            js = d.createElement(s) as HTMLScriptElement
             js.id = id;
             js.src = "https://platform.twitter.com/widgets.js";
             js.onerror = alert

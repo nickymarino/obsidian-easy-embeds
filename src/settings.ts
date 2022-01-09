@@ -1,5 +1,5 @@
-import TwitterEmbedPlugin from "main";
 import { PluginSettingTab, App, Setting } from "obsidian";
+import TwitterEmbedPlugin from "./main";
 
 export type Theme = 'light' | 'dark' | 'auto'
 export type ContentSecurityPolicy = 'on' | 'off'
