@@ -66,27 +66,19 @@ export default class TwitterEmbedPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on('layout-change', refreshTwitterIfActiveBlockquotes))
 
 		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
-			if (document.querySelector('.blockquote.twitter-tweet')) {
-				console.log('found tweet')
-			} else {
-				console.log('no tweets found')
-			}
-
 			const uiTheme: UITheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light'
 
 			el.querySelectorAll('a.external-link').forEach((anchor: HTMLAnchorElement) => {
 				const link = anchor.href
 
-				if (this.dropbox.canAddEmbed(link)) {
-					const embedContainer = el.createDiv()
-					embedContainer.setAttribute('class', 'easy-embed easy-embed-dropbox')
-					this.dropbox.addEmbed(embedContainer, link)
-
-				} else if (this.twitter.canAddEmbed(link)) {
-					const embedContainer = el.createDiv()
-					embedContainer.setAttribute('class', 'embed-container easy-embed-twitter')
-					const options = this.twitter.overrideOptions(this.settings, {}, uiTheme)
-					this.twitter.addEmbedToCodeBlock(embedContainer, link, options)
+				for (const embedder of liveEditorEmbedders) {
+					if (embedder.canAddEmbed(link)) {
+						const embedContainer = el.createDiv()
+						embedContainer.setAttribute('class', 'embed-container')
+						anchor.parentElement.parentElement.insertBefore(embedContainer, anchor.parentElement.nextSibling)
+						embedder.addEmbed(el, link, uiTheme, this.settings)
+						return
+					}
 				}
 			})
 

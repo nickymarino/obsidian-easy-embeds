@@ -22,7 +22,6 @@ declare global {
 }
 
 
-
 export default class TwitterEmbedder implements Embedder {
     constructor() {
         this.loadTwitterJS()
@@ -33,12 +32,23 @@ export default class TwitterEmbedder implements Embedder {
         return ((status != null) && (status !== undefined) && (status.length > 0))
     }
 
-    addEmbed(parent: HTMLElement, url: string): void{
-        const status = this.parseStatusIDFromUrl(url)
+    addEmbed(parent: HTMLElement, url: string, uiTheme?: UITheme, settings?: Settings): void{
+        const status = this.parseStatusIDFromUrl(url.trim())
+        if (!status) {
+            console.log(`Error: No status could be parsed from Twitter URL: ${url}`)
+            return
+        }
+
+        let options = {}
+        if (settings) {
+            options = this.overrideOptions(settings, {}, uiTheme)
+        }
+
         window.twttr.ready(() => {
             window.twttr.widgets.createTweet(
                 status,
                 parent,
+                options
             )
         })
     }
@@ -51,43 +61,6 @@ export default class TwitterEmbedder implements Embedder {
                 parent,
                 options
             )
-        })
-    }
-
-    loadTwitterJS() {
-        const alert = () => {
-            const message = 'Twitter Embeds error: Failed to load Twitter JS'
-            console.error(message)
-            new Notice(message)
-        }
-
-        // https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/set-up-twitter-for-websites
-        window.twttr = (function (d, s, id) {
-            // eslint-disable-next-line prefer-const
-            let js, fjs = d.getElementsByTagName(s)[0],
-                // eslint-disable-next-line prefer-const
-                t = window.twttr || {};
-            if (d.getElementById(id)) return t;
-            // eslint-disable-next-line prefer-const
-            js = d.createElement(s);
-            js.id = id;
-            js.src = "https://platform.twitter.com/widgets.js";
-            js.onerror = alert
-            js.async = true
-            fjs.parentNode.insertBefore(js, fjs);
-
-            t._e = [];
-            t.ready = function (f) {
-                t._e.push(f);
-            };
-
-            return t;
-        }(document, "script", "twitter-wjs"));
-    }
-
-    refreshTwitterJS() {
-        window.twttr.ready(() => {
-            window.twttr.widgets.load()
         })
     }
 
@@ -165,6 +138,43 @@ export default class TwitterEmbedder implements Embedder {
             overrides.align ?? defaults.align,
             overrides.theme ?? finalTheme
         )
+    }
+
+    loadTwitterJS() {
+        const alert = () => {
+            const message = 'Twitter Embeds error: Failed to load Twitter JS'
+            console.error(message)
+            new Notice(message)
+        }
+
+        // https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/set-up-twitter-for-websites
+        window.twttr = (function (d, s, id) {
+            // eslint-disable-next-line prefer-const
+            let js, fjs = d.getElementsByTagName(s)[0],
+                // eslint-disable-next-line prefer-const
+                t = window.twttr || {};
+            if (d.getElementById(id)) return t;
+            // eslint-disable-next-line prefer-const
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "https://platform.twitter.com/widgets.js";
+            js.onerror = alert
+            js.async = true
+            fjs.parentNode.insertBefore(js, fjs);
+
+            t._e = [];
+            t.ready = function (f) {
+                t._e.push(f);
+            };
+
+            return t;
+        }(document, "script", "twitter-wjs"));
+    }
+
+    refreshTwitterJS() {
+        window.twttr.ready(() => {
+            window.twttr.widgets.load()
+        })
     }
 
 }
